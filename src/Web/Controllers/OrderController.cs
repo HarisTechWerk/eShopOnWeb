@@ -13,15 +13,17 @@ namespace Microsoft.eShopWeb.Web.Controllers;
 public class OrderController : Controller
 {
     private readonly IMediator _mediator;
+    private readonly ILogger<OrderController> _logger;
 
-    public OrderController(IMediator mediator)
+    public OrderController(IMediator mediator, ILogger<OrderController> logger)
     {
         _mediator = mediator;
+        _logger = logger;
     }
 
     [HttpGet]
     public async Task<IActionResult> MyOrders()
-    {   
+    {
         Guard.Against.Null(User?.Identity?.Name, nameof(User.Identity.Name));
         var viewModel = await _mediator.Send(new GetMyOrders(User.Identity.Name));
 
@@ -31,11 +33,14 @@ public class OrderController : Controller
     [HttpGet("{orderId}")]
     public async Task<IActionResult> Detail(int orderId)
     {
+        _logger.LogInformation("Fetching order details for Order ID: {OrderId}", orderId);
+
         Guard.Against.Null(User?.Identity?.Name, nameof(User.Identity.Name));
         var viewModel = await _mediator.Send(new GetOrderDetails(User.Identity.Name, orderId));
 
         if (viewModel == null)
         {
+            _logger.LogWarning($"Order with ID {orderId} not found for user {User.Identity.Name}");
             return BadRequest("No such order found for this user.");
         }
 
